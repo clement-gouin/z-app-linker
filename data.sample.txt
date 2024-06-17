@@ -1,0 +1,20 @@
+--- QUIZZ1
+Quizz 1
+See you on <a href="QUIZZ2">Quizz 2</a>
+Try again!
+4
+What's 5x4?
+20
+9
+25
+15
+--- QUIZZ2
+Quizz 2
+You can have a cookie
+Try again!
+4
+What's 134x245?
+32830
+20
+31045
+25025
