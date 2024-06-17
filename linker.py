@@ -5,6 +5,7 @@ import re
 import sys
 import argparse
 import requests
+import html
 
 # external librairies
 import dotenv
@@ -48,7 +49,7 @@ class Riddle:
                 self.dependencies += [other]
 
     def resolve(self) -> None:
-        data = self.data
+        data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
         for dependency in self.dependencies:
             data = data.replace(
                 dependency.link_name,
@@ -99,7 +100,7 @@ def custom_link(uri: str, data: str) -> str:
 
 def read_data_file(data_path: str) -> list[str]:
     try:
-        with open(data_path) as data_file:
+        with open(data_path, encoding="utf-8") as data_file:
             return data_file.read().strip().splitlines()
     except Exception as exception:
         print(f"ERROR: Cannot read {data_path}: {exception}", file=sys.stderr)
