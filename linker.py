@@ -155,7 +155,7 @@ def resolve_all_riddles(riddles: list[Riddle]) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="links [Treasure Finder] & [On The Quizz] data between them.\n\ndocumentations:\n* Treasure Finder -> https://github.com/clement-gouin/treasure-finder\n* On The Quizz -> https://github.com/clement-gouin/on-the-quizz",
+        description="links [Treasure Finder] & [On The Quizz] data between them.\n(see data.sample.txt for data format)\n\ndocumentations:\n* Treasure Finder -> https://github.com/clement-gouin/treasure-finder\n* On The Quizz -> https://github.com/clement-gouin/on-the-quizz",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(

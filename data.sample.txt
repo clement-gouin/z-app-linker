@@ -1,6 +1,6 @@
---- QUIZZ1
+--- QUIZZ_1
 Quizz 1
-See you on <a href="QUIZZ2">Quizz 2</a>
+See you on <a href="QUIZZ_2">Quizz 2</a>
 Try again!
 4
 What's 5x4?
@@ -8,9 +8,9 @@ What's 5x4?
 9
 25
 15
---- QUIZZ2
+--- QUIZZ_2
 Quizz 2
-You can have a cookie
+Have a <a href='https://orteil.dashnet.org/cookieclicker/'>cookie</a> !
 Try again!
 4
 What's 134x245?

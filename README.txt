@@ -1,6 +1,7 @@
 usage: linker.py [-h] [-d [PATH]]
 
 links [Treasure Finder] & [On The Quizz] data between them.
+(see data.sample.txt for data format)
 
 documentations:
 * Treasure Finder -> https://github.com/clement-gouin/treasure-finder
