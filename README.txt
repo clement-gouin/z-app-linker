@@ -1,4 +1,4 @@
-usage: linker.py [-h] [-d [PATH]]
+usage: linker.py [-h] [-d [data.txt]]
 
 links [Treasure Finder] & [On The Quizz] data between them.
 (see data.sample.txt for data format)
@@ -9,5 +9,5 @@ documentations:
 
 options:
   -h, --help            show this help message and exit
-  -d [PATH], --data [PATH]
-                        source file path (default: data.txt)
+  -d [data.txt], --data [data.txt]
+                        data file path (default: data.txt)
