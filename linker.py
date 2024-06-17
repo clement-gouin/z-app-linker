@@ -162,10 +162,10 @@ def main():
         "-d",
         "--data",
         nargs="?",
-        help="source file path (default: data.txt)",
+        help="data file path (default: data.txt)",
         default="data.txt",
         required=False,
-        metavar="PATH",
+        metavar="data.txt",
         dest="data_path",
     )
     args = parser.parse_args()
