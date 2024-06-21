@@ -57,7 +57,10 @@ class Link:
                 dependency.link_name,
                 dependency.link,
             )
-        update_short_url(self.link, custom_link(self.get_uri(), data))
+        if self.link is None:
+            self.link = shorten_url(custom_link(self.get_uri(), data), existing=True)
+        else:
+            update_short_url(self.link, custom_link(self.get_uri(), data))
         self.resolved = True
 
     def __repr__(self) -> str:
@@ -79,10 +82,10 @@ def is_float(s: str) -> bool:
         return False
 
 
-def shorten_url(url: str) -> str:
+def shorten_url(url: str, existing: bool = False) -> str:
     resp = requests.post(
         f"{SHLINK_API_URI}/short-urls",
-        data={"longUrl": url},
+        data={"longUrl": url, "findIfExists": existing},
         headers={"X-Api-Key": SHLINK_API_KEY},
     )
 
@@ -128,7 +131,7 @@ def read_data_file(data_path: str) -> list[str]:
         sys.exit(1)
 
 
-def parse_data_file(raw_data: list[str]) -> list[Link]:
+def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
     if len(raw_data) == 0:
         print(f"ERROR: Empty data file", file=sys.stderr)
         sys.exit(1)
@@ -146,6 +149,19 @@ def parse_data_file(raw_data: list[str]) -> list[Link]:
             data_buffer += [line]
     if current_link_name is not None:
         riddles += [Link(current_link_name, "\n".join(data_buffer))]
+    if add_debug:
+        riddles += [
+            Link(
+                "DEBUG",
+                "Debug\n"
+                + "\n".join(
+                    riddle.link_name
+                    + "\n"
+                    + "&#x200B;".join(c for c in riddle.link_name)
+                    for i, riddle in enumerate(riddles)
+                ),
+            )
+        ]
     return riddles
 
 
@@ -162,15 +178,32 @@ def link_all_riddles(riddles: list[Link]) -> None:
         riddle.link_dependencies(riddles)
 
 
-def resolve_all_riddles(riddles: list[Link]) -> None:
+def resolve_all_riddles(riddles: list[Link], fast: bool) -> None:
     print(f"resolving links for {len(riddles)} elements...")
     print_riddles(riddles, clear=False)
-    for riddle in riddles:
-        riddle.resolve_shallow()
-        print_riddles(riddles)
-    for riddle in riddles:
-        riddle.resolve()
-        print_riddles(riddles)
+    if fast:
+        while any(not riddle.resolved for riddle in riddles):
+            available = [
+                riddle
+                for riddle in riddles
+                if not riddle.resolved
+                and all(dep.resolved for dep in riddle.dependencies)
+            ]
+            if len(available) == 0:
+                print(
+                    f"ERROR: Cannot resolve fast with cycling dependencies",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            available[0].resolve()
+            print_riddles(riddles)
+    else:
+        for riddle in riddles:
+            riddle.resolve_shallow()
+            print_riddles(riddles)
+        for riddle in riddles:
+            riddle.resolve()
+            print_riddles(riddles)
 
 
 def main():
@@ -188,15 +221,27 @@ def main():
         metavar="data.txt",
         dest="data_path",
     )
+    parser.add_argument(
+        "--with-debug",
+        action=argparse.BooleanOptionalAction,
+        help="create debug Cross-Roads link with all links within",
+        default=False,
+    )
+    parser.add_argument(
+        "--fast",
+        action=argparse.BooleanOptionalAction,
+        help="resolve links in dependency order (faster)",
+        default=False,
+    )
     args = parser.parse_args()
 
     raw_data = read_data_file(args.data_path)
 
-    riddles = parse_data_file(raw_data)
+    riddles = parse_data_file(raw_data, args.with_debug)
 
     link_all_riddles(riddles)
 
-    resolve_all_riddles(riddles)
+    resolve_all_riddles(riddles, args.fast)
 
 
 if __name__ == "__main__":
