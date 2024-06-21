@@ -5,7 +5,6 @@ import re
 import sys
 import argparse
 import requests
-import html
 
 # external librairies
 import dotenv
@@ -212,6 +211,19 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
+        "--with-debug",
+        action="store_true",
+        help="create debug Cross-Roads link with all links within",
+        default=False,
+    )
+    parser.add_argument(
+        "-f",
+        "--fast",
+        action="store_true",
+        help="resolve links in dependency order (faster)",
+        default=False,
+    )
+    parser.add_argument(
         "-d",
         "--data",
         nargs="?",
@@ -220,18 +232,6 @@ def main():
         required=False,
         metavar="data.txt",
         dest="data_path",
-    )
-    parser.add_argument(
-        "--with-debug",
-        action=argparse.BooleanOptionalAction,
-        help="create debug Cross-Roads link with all links within",
-        default=False,
-    )
-    parser.add_argument(
-        "--fast",
-        action=argparse.BooleanOptionalAction,
-        help="resolve links in dependency order (faster)",
-        default=False,
     )
     args = parser.parse_args()
 
