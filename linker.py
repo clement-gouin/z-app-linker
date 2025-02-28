@@ -13,32 +13,21 @@ import validators
 
 dotenv.load_dotenv()
 
-TREASURE_FINDER_URI = os.environ.get("TREASURE_FINDER_URI")
-ON_THE_QUIZZ_URI = os.environ.get("ON_THE_QUIZZ_URI")
-CROSS_ROADS_URI = os.environ.get("CROSS_ROADS_URI")
+APPS = os.environ.get("APPS").strip().split("\n")
+SEPARATORS = "-=+#@%$._*"
 SHLINK_API_URI = os.environ.get("SHLINK_API_URI")
 SHLINK_API_KEY = os.environ.get("SHLINK_API_KEY")
 
 
 class Link:
-    def __init__(self, link_name: str, data: str) -> None:
+    def __init__(self, app: str, link_name: str, data: str) -> None:
+        self.app = app
+        self.app_name = app.split("/")[-1]
         self.link_name = link_name
         self.data = data
         self.dependencies: list[Link] = []
         self.link = None
         self.resolved = False
-
-    def get_uri(self) -> str:
-        lines = self.data.splitlines()
-        if len(lines) > 0 and is_float(lines[0]):
-            return TREASURE_FINDER_URI
-        elif len(lines) >= 3 and (
-            validators.url(lines[1])
-            or any(lines[1] == dependency.link_name for dependency in self.dependencies)
-        ):
-            return CROSS_ROADS_URI
-        else:
-            return ON_THE_QUIZZ_URI
 
     def link_dependencies(self, others: list["Link"]) -> None:
         for other in others:
@@ -47,7 +36,7 @@ class Link:
 
     def resolve_shallow(self) -> None:
         data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
-        self.link = shorten_url(custom_link(self.get_uri(), data))
+        self.link = shorten_url(custom_link(self.app, data))
 
     def resolve(self) -> None:
         data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
@@ -57,20 +46,18 @@ class Link:
                 dependency.link,
             )
         if self.link is None:
-            self.link = shorten_url(custom_link(self.get_uri(), data), existing=True)
+            self.link = shorten_url(custom_link(self.app, data), existing=True)
         else:
-            update_short_url(self.link, custom_link(self.get_uri(), data))
+            update_short_url(self.link, custom_link(self.app, data))
         self.resolved = True
 
     def __repr__(self) -> str:
         if self.link is None:
-            return f"{self.link_name}: \033[33;1mcreating...\033[0m"
+            return f"{self.link_name} ({self.app_name}): \033[33;1mcreating...\033[0m"
         elif self.resolved:
-            return (
-                f"{self.link_name}: \033[34;1m{self.link}\033[0m \033[32;1mdone\033[0m"
-            )
+            return f"{self.link_name} ({self.app_name}): \033[34;1m{self.link}\033[0m \033[32;1mdone\033[0m"
         else:
-            return f"{self.link_name}: \033[34;1m{self.link}\033[0m \033[33;1mupdating...\033[0m"
+            return f"{self.link_name} ({self.app_name}): \033[34;1m{self.link}\033[0m \033[33;1mupdating...\033[0m"
 
 
 def is_float(s: str) -> bool:
@@ -130,63 +117,70 @@ def read_data_file(data_path: str) -> list[str]:
         sys.exit(1)
 
 
+def guess_app(separator: str) -> str:
+    index = SEPARATORS.index(separator)
+    if index > len(APPS) - 1:
+        raise Exception(f"Invalid separator: {separator * 5}")
+    return APPS[index]
+
+
 def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
     if len(raw_data) == 0:
         print(f"ERROR: Empty data file", file=sys.stderr)
         sys.exit(1)
+    current_app = None
     current_link_name = None
     data_buffer = None
-    riddles: list[Link] = []
+    apps: list[Link] = []
     for line in raw_data:
-        match = re.findall(r"^---\s*(\w+)", line)
+        match = re.findall(r"^([\-=+#@%$._*])\1{4}\s*(\w+)", line)
         if len(match):
             if current_link_name is not None:
-                riddles += [Link(current_link_name, "\n".join(data_buffer))]
-            current_link_name = match[0]
+                apps += [Link(current_app, current_link_name, "\n".join(data_buffer))]
+            current_app = guess_app(match[0][0])
+            current_link_name = match[0][1]
             data_buffer = []
         else:
             data_buffer += [line]
     if current_link_name is not None:
-        riddles += [Link(current_link_name, "\n".join(data_buffer))]
+        apps += [Link(current_app, current_link_name, "\n".join(data_buffer))]
     if add_debug:
-        riddles += [
+        apps += [
             Link(
+                "https://github.com/clement-gouin/z-cross-roads",
                 "DEBUG",
                 "Debug\n"
                 + "\n".join(
-                    riddle.link_name
-                    + "\n"
-                    + "&#x200B;".join(c for c in riddle.link_name)
-                    for i, riddle in enumerate(riddles)
+                    app.link_name + "\n" + "&#x200B;".join(c for c in app.link_name)
+                    for app in apps
                 ),
             )
         ]
-    return riddles
+    return apps
 
 
-def print_riddles(riddles: list[Link], clear: bool = True) -> None:
+def print_apps(apps: list[Link], clear: bool = True) -> None:
     if clear:
-        for _ in range(len(riddles)):
+        for _ in range(len(apps)):
             print("\x1b[1A\x1b[2K", end="")
-    for riddle in riddles:
-        print(f"* {riddle}")
+    for app in apps:
+        print(f"* {app}")
 
 
-def link_all_riddles(riddles: list[Link]) -> None:
-    for riddle in riddles:
-        riddle.link_dependencies(riddles)
+def link_all_apps(apps: list[Link]) -> None:
+    for app in apps:
+        app.link_dependencies(apps)
 
 
-def resolve_all_riddles(riddles: list[Link], fast: bool) -> None:
-    print(f"resolving links for {len(riddles)} elements...")
-    print_riddles(riddles, clear=False)
+def resolve_all_apps(apps: list[Link], fast: bool) -> None:
+    print(f"resolving links for {len(apps)} elements...")
+    print_apps(apps, clear=False)
     if fast:
-        while any(not riddle.resolved for riddle in riddles):
+        while any(not app.resolved for app in apps):
             available = [
-                riddle
-                for riddle in riddles
-                if not riddle.resolved
-                and all(dep.resolved for dep in riddle.dependencies)
+                app
+                for app in apps
+                if not app.resolved and all(dep.resolved for dep in app.dependencies)
             ]
             if len(available) == 0:
                 print(
@@ -195,19 +189,24 @@ def resolve_all_riddles(riddles: list[Link], fast: bool) -> None:
                 )
                 sys.exit(1)
             available[0].resolve()
-            print_riddles(riddles)
+            print_apps(apps)
     else:
-        for riddle in riddles:
-            riddle.resolve_shallow()
-            print_riddles(riddles)
-        for riddle in riddles:
-            riddle.resolve()
-            print_riddles(riddles)
+        for app in apps:
+            app.resolve_shallow()
+            print_apps(apps)
+        for app in apps:
+            app.resolve()
+            print_apps(apps)
+
+
+def make_desc() -> str:
+    return "\n".join(SEPARATORS[i] * 5 + " " + app for i, app in enumerate(APPS))
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="links [Treasure Finder/On The Quizz/Cross-Roads] data between them.\n(see data.sample.txt for data format)\n\ndocumentations:\n* Treasure Finder -> https://github.com/clement-gouin/treasure-finder\n* On The Quizz -> https://github.com/clement-gouin/on-the-quizz\n* Cross-Roads -> https://github.com/clement-gouin/cross-roads",
+        description="links z-app data between them.\n(see data.sample.txt for data format)\nseparators:\n"
+        + make_desc(),
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
@@ -237,11 +236,11 @@ def main():
 
     raw_data = read_data_file(args.data_path)
 
-    riddles = parse_data_file(raw_data, args.with_debug)
+    apps = parse_data_file(raw_data, args.with_debug)
 
-    link_all_riddles(riddles)
+    link_all_apps(apps)
 
-    resolve_all_riddles(riddles, args.fast)
+    resolve_all_apps(apps, args.fast)
 
 
 if __name__ == "__main__":

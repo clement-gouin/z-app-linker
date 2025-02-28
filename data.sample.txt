@@ -1,4 +1,4 @@
---- QUIZZ_1
++++++ QUIZZ_1
 Quizz 1
 See you on <a href="QUIZZ_2">Quizz 2</a>
 Try again!
@@ -8,9 +8,9 @@ What's 5x4?
 9
 25
 15
---- QUIZZ_2
++++++ QUIZZ_2
 Quizz 2
-Have a <a href='https://orteil.dashnet.org/cookieclicker/'>cookie</a> !
+See you on <a href="FINISH">Finish</a>
 Try again!
 4
 What's 134x245?
@@ -18,3 +18,6 @@ What's 134x245?
 20
 31045
 25025
+----- FINISH
+You did it!
+Have a <a href='https://orteil.dashnet.org/cookieclicker/'>cookie</a> !
