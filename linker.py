@@ -295,13 +295,7 @@ def main():
 
     if args.preview:
         print(f"generating preview for {len(apps)} elements...")
-        preview = Preview(apps).compute()
-        # if preview is None:
-        #     print(
-        #         f"ERROR: Cannot compute preview",
-        #         file=sys.stderr,
-        #     )
-        #     sys.exit(1)
+        Preview(apps).compute()
 
     if not args.dry:
         resolve_all_apps(apps, args.fast)
