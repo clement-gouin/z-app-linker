@@ -9,25 +9,36 @@ import requests
 # external librairies
 import dotenv
 import lzstring
-import validators
+import graphviz
 
 dotenv.load_dotenv()
 
-APPS = os.environ.get("APPS").strip().split("\n")
-SEPARATORS = "-=+#@%$._*"
+APPS = {
+    "https://github.com/clement-gouin/z-app": ("=", "#e6e6e6"),
+    "https://github.com/clement-gouin/z-treasure-finder": ("@", "#a1a1e6"),
+    "https://github.com/clement-gouin/z-on-the-quizz": ("?", "#e6a1a1"),
+    "https://github.com/clement-gouin/z-cross-roads": ("+", "#a1e6a1"),
+    "https://github.com/clement-gouin/z-dice-roller": ("%", "#e6a1e6"),
+    "https://github.com/clement-gouin/z-hero-quest": ("$", "#a1e6e6"),
+}
 SHLINK_API_URI = os.environ.get("SHLINK_API_URI")
 SHLINK_API_KEY = os.environ.get("SHLINK_API_KEY")
+
+COLOR_RESET = "\033[0m"
 
 
 class Link:
     def __init__(self, app: str, link_name: str, data: str) -> None:
         self.app = app
-        self.app_name = app.split("/")[-1]
         self.link_name = link_name
         self.data = data
         self.dependencies: list[Link] = []
         self.link = None
         self.resolved = False
+
+    @property
+    def app_name(self) -> str:
+        return self.app.split("/")[-1]
 
     def link_dependencies(self, others: list["Link"]) -> None:
         for other in others:
@@ -51,13 +62,42 @@ class Link:
             update_short_url(self.link, custom_link(self.app, data))
         self.resolved = True
 
-    def __repr__(self) -> str:
+    def status(self) -> str:
         if self.link is None:
-            return f"{self.link_name} ({self.app_name}): \033[33;1mcreating...\033[0m"
+            return f"\033[33;1mcreating...{COLOR_RESET}"
         elif self.resolved:
-            return f"{self.link_name} ({self.app_name}): \033[34;1m{self.link}\033[0m \033[32;1mdone\033[0m"
+            return f"\033[34;1m{self.link}{COLOR_RESET} \033[32;1mdone{COLOR_RESET}"
         else:
-            return f"{self.link_name} ({self.app_name}): \033[34;1m{self.link}\033[0m \033[33;1mupdating...\033[0m"
+            return (
+                f"\033[34;1m{self.link}{COLOR_RESET} \033[33;1mupdating...{COLOR_RESET}"
+            )
+
+    def color(self) -> str:
+        return f"\033[{31 + list(APPS.keys()).index(self.app)};1m"
+
+    def __repr__(self) -> str:
+        return self.link_name
+
+
+class Preview:
+    def __init__(self, links: list[Link], filename: str = "preview"):
+        self.links = links
+        self.filename = filename
+
+    def compute(self):
+        dot = graphviz.Digraph("preview", format="png", engine="circo")
+
+        for link in self.links:
+            dot.node(
+                link.link_name,
+                link.link_name,
+                fillcolor=APPS[link.app][1],
+                style="filled",
+            )
+            for other in link.dependencies:
+                dot.edge(other.link_name, link.link_name)
+
+        dot.render(self.filename)
 
 
 def is_float(s: str) -> bool:
@@ -118,10 +158,10 @@ def read_data_file(data_path: str) -> list[str]:
 
 
 def guess_app(separator: str) -> str:
-    index = SEPARATORS.index(separator)
-    if index > len(APPS) - 1:
-        raise Exception(f"Invalid separator: {separator * 5}")
-    return APPS[index]
+    for app in APPS:
+        if APPS[app][0] == separator:
+            return app
+    raise Exception(f"Invalid separator: {separator * 5}")
 
 
 def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
@@ -133,7 +173,7 @@ def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
     data_buffer = None
     apps: list[Link] = []
     for line in raw_data:
-        match = re.findall(r"^([\-=+#@%$._*])\1{4}\s*(\w+)", line)
+        match = re.findall(r"^([=@?+%$])\1{4}\s*(\w+)", line)
         if len(match):
             if current_link_name is not None:
                 apps += [Link(current_app, current_link_name, "\n".join(data_buffer))]
@@ -164,7 +204,7 @@ def print_apps(apps: list[Link], clear: bool = True) -> None:
         for _ in range(len(apps)):
             print("\x1b[1A\x1b[2K", end="")
     for app in apps:
-        print(f"* {app}")
+        print(f"* {app.color()}{app}{COLOR_RESET}: {app.status()}")
 
 
 def link_all_apps(apps: list[Link]) -> None:
@@ -200,7 +240,7 @@ def resolve_all_apps(apps: list[Link], fast: bool) -> None:
 
 
 def make_desc() -> str:
-    return "\n".join(SEPARATORS[i] * 5 + " " + app for i, app in enumerate(APPS))
+    return "\n".join(APPS[app][0] * 5 + " " + app for app in APPS)
 
 
 def main():
@@ -223,6 +263,19 @@ def main():
         default=False,
     )
     parser.add_argument(
+        "-p",
+        "--preview",
+        action="store_true",
+        help="show links tree in console",
+        default=False,
+    )
+    parser.add_argument(
+        "--dry",
+        action="store_true",
+        help="do not compute links",
+        default=False,
+    )
+    parser.add_argument(
         "-d",
         "--data",
         nargs="?",
@@ -240,7 +293,18 @@ def main():
 
     link_all_apps(apps)
 
-    resolve_all_apps(apps, args.fast)
+    if args.preview:
+        print(f"generating preview for {len(apps)} elements...")
+        preview = Preview(apps).compute()
+        # if preview is None:
+        #     print(
+        #         f"ERROR: Cannot compute preview",
+        #         file=sys.stderr,
+        #     )
+        #     sys.exit(1)
+
+    if not args.dry:
+        resolve_all_apps(apps, args.fast)
 
 
 if __name__ == "__main__":
