@@ -14,12 +14,12 @@ import graphviz
 dotenv.load_dotenv()
 
 APPS = {
-    "https://github.com/clement-gouin/z-app": ("=", "#e6e6e6"),
-    "https://github.com/clement-gouin/z-treasure-finder": ("@", "#a1a1e6"),
-    "https://github.com/clement-gouin/z-on-the-quizz": ("?", "#e6a1a1"),
-    "https://github.com/clement-gouin/z-cross-roads": ("+", "#a1e6a1"),
-    "https://github.com/clement-gouin/z-dice-roller": ("%", "#e6a1e6"),
-    "https://github.com/clement-gouin/z-hero-quest": ("$", "#a1e6e6"),
+    "https://clement-gouin.github.io/z-app": ("=", "#e6e6e6"),
+    "https://clement-gouin.github.io/z-treasure-finder": ("@", "#a1a1e6"),
+    "https://clement-gouin.github.io/z-on-the-quizz": ("?", "#e6a1a1"),
+    "https://clement-gouin.github.io/z-cross-roads": ("+", "#a1e6a1"),
+    "https://clement-gouin.github.io/z-dice-roller": ("%", "#e6a1e6"),
+    "https://clement-gouin.github.io/z-hero-quest": ("$", "#a1e6e6"),
 }
 SHLINK_API_URI = os.environ.get("SHLINK_API_URI")
 SHLINK_API_KEY = os.environ.get("SHLINK_API_KEY")
@@ -95,7 +95,7 @@ class Preview:
                 style="filled",
             )
             for other in link.dependencies:
-                dot.edge(other.link_name, link.link_name)
+                dot.edge(link.link_name, other.link_name)
 
         dot.render(self.filename)
 
