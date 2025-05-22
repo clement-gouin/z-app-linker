@@ -250,7 +250,7 @@ def __main():
         "-p",
         "--preview",
         action="store_true",
-        help="show links tree in console",
+        help="show links tree in a preview.png file",
         default=False,
     )
     parser.add_argument(
