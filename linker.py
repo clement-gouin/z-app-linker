@@ -11,9 +11,7 @@ import dotenv
 import lzstring
 import graphviz
 
-dotenv.load_dotenv()
-
-APPS = {
+__APPS = {
     "https://clement-gouin.github.io/z-app": ("=", "#e6e6e6"),
     "https://clement-gouin.github.io/z-treasure-finder": ("@", "#a1a1e6"),
     "https://clement-gouin.github.io/z-on-the-quizz": ("?", "#e6a1a1"),
@@ -21,10 +19,6 @@ APPS = {
     "https://clement-gouin.github.io/z-dice-roller": ("%", "#e6a1e6"),
     "https://clement-gouin.github.io/z-hero-quest": ("$", "#a1e6e6"),
 }
-SHLINK_API_URI = os.environ.get("SHLINK_API_URI")
-SHLINK_API_KEY = os.environ.get("SHLINK_API_KEY")
-
-COLOR_RESET = "\033[0m"
 
 
 class Link:
@@ -64,16 +58,14 @@ class Link:
 
     def status(self) -> str:
         if self.link is None:
-            return f"\033[33;1mcreating...{COLOR_RESET}"
+            return f"\033[33;1mcreating...\033[0m"
         elif self.resolved:
-            return f"\033[34;1m{self.link}{COLOR_RESET} \033[32;1mdone{COLOR_RESET}"
+            return f"\033[34;1m{self.link}\033[0m \033[32;1mdone\033[0m"
         else:
-            return (
-                f"\033[34;1m{self.link}{COLOR_RESET} \033[33;1mupdating...{COLOR_RESET}"
-            )
+            return f"\033[34;1m{self.link}\033[0m \033[33;1mupdating...\033[0m"
 
     def color(self) -> str:
-        return f"\033[{31 + list(APPS.keys()).index(self.app)};1m"
+        return f"\033[{31 + list(__APPS.keys()).index(self.app)};1m"
 
     def __repr__(self) -> str:
         return self.link_name
@@ -91,7 +83,7 @@ class Preview:
             dot.node(
                 link.link_name,
                 link.link_name,
-                fillcolor=APPS[link.app][1],
+                fillcolor=__APPS[link.app][1],
                 style="filled",
             )
             for other in link.dependencies:
@@ -100,19 +92,11 @@ class Preview:
         dot.render(self.filename)
 
 
-def is_float(s: str) -> bool:
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-
 def shorten_url(url: str, existing: bool = False) -> str:
     resp = requests.post(
-        f"{SHLINK_API_URI}/short-urls",
+        f"{os.environ.get("SHLINK_API_URI")}/short-urls",
         data={"longUrl": url, "findIfExists": existing},
-        headers={"X-Api-Key": SHLINK_API_KEY},
+        headers={"X-Api-Key": os.environ.get("SHLINK_API_KEY")},
     )
 
     if resp.status_code != 200:
@@ -125,9 +109,9 @@ def shorten_url(url: str, existing: bool = False) -> str:
 def update_short_url(short_url: str, new_url: str) -> None:
     shortCode = short_url.split("/")[-1]
     resp = requests.patch(
-        f"{SHLINK_API_URI}/short-urls/{shortCode}",
+        f"{os.environ.get("SHLINK_API_URI")}/short-urls/{shortCode}",
         data={"longUrl": new_url},
-        headers={"X-Api-Key": SHLINK_API_KEY},
+        headers={"X-Api-Key": os.environ.get("SHLINK_API_KEY")},
     )
 
     if resp.status_code != 200:
@@ -148,7 +132,7 @@ def custom_link(uri: str, data: str) -> str:
     return uri + "?z=" + data
 
 
-def read_data_file(data_path: str) -> list[str]:
+def __read_data_file(data_path: str) -> list[str]:
     try:
         with open(data_path, encoding="utf-8") as data_file:
             return data_file.read().strip().splitlines()
@@ -157,9 +141,9 @@ def read_data_file(data_path: str) -> list[str]:
         sys.exit(1)
 
 
-def guess_app(separator: str) -> str:
-    for app in APPS:
-        if APPS[app][0] == separator:
+def __guess_app(separator: str) -> str:
+    for app in __APPS:
+        if __APPS[app][0] == separator:
             return app
     raise Exception(f"Invalid separator: {separator * 5}")
 
@@ -177,7 +161,7 @@ def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
         if len(match):
             if current_link_name is not None:
                 apps += [Link(current_app, current_link_name, "\n".join(data_buffer))]
-            current_app = guess_app(match[0][0])
+            current_app = __guess_app(match[0][0])
             current_link_name = match[0][1]
             data_buffer = []
         else:
@@ -199,12 +183,12 @@ def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
     return apps
 
 
-def print_apps(apps: list[Link], clear: bool = True) -> None:
+def __print_apps(apps: list[Link], clear: bool = True) -> None:
     if clear:
         for _ in range(len(apps)):
             print("\x1b[1A\x1b[2K", end="")
     for app in apps:
-        print(f"* {app.color()}{app}{COLOR_RESET}: {app.status()}")
+        print(f"* {app.color()}{app}\033[0m: {app.status()}")
 
 
 def link_all_apps(apps: list[Link]) -> None:
@@ -214,7 +198,7 @@ def link_all_apps(apps: list[Link]) -> None:
 
 def resolve_all_apps(apps: list[Link], fast: bool) -> None:
     print(f"resolving links for {len(apps)} elements...")
-    print_apps(apps, clear=False)
+    __print_apps(apps, clear=False)
     if fast:
         while any(not app.resolved for app in apps):
             available = [
@@ -229,24 +213,24 @@ def resolve_all_apps(apps: list[Link], fast: bool) -> None:
                 )
                 sys.exit(1)
             available[0].resolve()
-            print_apps(apps)
+            __print_apps(apps)
     else:
         for app in apps:
             app.resolve_shallow()
-            print_apps(apps)
+            __print_apps(apps)
         for app in apps:
             app.resolve()
-            print_apps(apps)
+            __print_apps(apps)
 
 
-def make_desc() -> str:
-    return "\n".join(APPS[app][0] * 5 + " " + app for app in APPS)
+def __make_desc() -> str:
+    return "\n".join(__APPS[app][0] * 5 + " " + app for app in __APPS)
 
 
-def main():
+def __main():
     parser = argparse.ArgumentParser(
         description="links z-app data between them.\n(see data.sample.txt for data format)\nseparators:\n"
-        + make_desc(),
+        + __make_desc(),
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
@@ -287,7 +271,7 @@ def main():
     )
     args = parser.parse_args()
 
-    raw_data = read_data_file(args.data_path)
+    raw_data = __read_data_file(args.data_path)
 
     apps = parse_data_file(raw_data, args.with_debug)
 
@@ -302,4 +286,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    dotenv.load_dotenv()
+    __main()
