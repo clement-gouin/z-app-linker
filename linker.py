@@ -196,7 +196,7 @@ def link_all_apps(apps: list[Link]) -> None:
         app.link_dependencies(apps)
 
 
-def resolve_all_apps(apps: list[Link], fast: bool) -> None:
+def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
     print(f"resolving links for {len(apps)} elements...")
     __print_apps(apps, clear=False)
     if fast:
