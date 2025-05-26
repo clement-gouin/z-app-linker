@@ -180,6 +180,7 @@ def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
                 ),
             )
         ]
+    print(f"INFO: parsed {len(apps)} apps")
     return apps
 
 
@@ -194,10 +195,11 @@ def __print_apps(apps: list[Link], clear: bool = True) -> None:
 def link_all_apps(apps: list[Link]) -> None:
     for app in apps:
         app.link_dependencies(apps)
+    print(f"INFO: linked {len(apps)} apps")
 
 
 def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
-    print(f"resolving links for {len(apps)} elements...")
+    print(f"INFO: resolving links for {len(apps)} apps...")
     __print_apps(apps, clear=False)
     if fast:
         while any(not app.resolved for app in apps):
@@ -221,6 +223,7 @@ def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
         for app in apps:
             app.resolve()
             __print_apps(apps)
+    print(f"INFO: resolved {len(apps)} apps")
 
 
 def __make_desc() -> str:
@@ -278,7 +281,7 @@ def __main():
     link_all_apps(apps)
 
     if args.preview:
-        print(f"generating preview for {len(apps)} elements...")
+        print(f"INGO: generating preview for {len(apps)} apps...")
         Preview(apps).compute()
 
     if not args.dry:
