@@ -11,7 +11,7 @@ import dotenv
 import lzstring
 import graphviz
 
-__APPS = {
+APPS = {
     "https://clement-gouin.github.io/z-app": ("=", "#e6e6e6"),
     "https://clement-gouin.github.io/z-treasure-finder": ("@", "#a1a1e6"),
     "https://clement-gouin.github.io/z-on-the-quizz": ("?", "#e6a1a1"),
@@ -65,7 +65,7 @@ class Link:
             return f"\033[34;1m{self.link}\033[0m \033[33;1mupdating...\033[0m"
 
     def color(self) -> str:
-        return f"\033[{31 + list(__APPS.keys()).index(self.app)};1m"
+        return f"\033[{31 + list(APPS.keys()).index(self.app)};1m"
 
     def __repr__(self) -> str:
         return self.link_name
@@ -83,7 +83,7 @@ class Preview:
             dot.node(
                 link.link_name,
                 link.link_name,
-                fillcolor=__APPS[link.app][1],
+                fillcolor=APPS[link.app][1],
                 style="filled",
             )
             for other in link.dependencies:
@@ -142,8 +142,8 @@ def __read_data_file(data_path: str) -> list[str]:
 
 
 def __guess_app(separator: str) -> str:
-    for app in __APPS:
-        if __APPS[app][0] == separator:
+    for app in APPS:
+        if APPS[app][0] == separator:
             return app
     raise Exception(f"Invalid separator: {separator * 5}")
 
@@ -227,7 +227,7 @@ def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
 
 
 def __make_desc() -> str:
-    return "\n".join(__APPS[app][0] * 5 + " " + app for app in __APPS)
+    return "\n".join(APPS[app][0] * 5 + " " + app for app in APPS)
 
 
 def __main():
