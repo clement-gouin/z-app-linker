@@ -94,7 +94,7 @@ class Preview:
 
 def shorten_url(url: str, existing: bool = False) -> str:
     resp = requests.post(
-        f"{os.environ.get("SHLINK_API_URI")}/short-urls",
+        f"{os.environ.get('SHLINK_API_URI')}/short-urls",
         data={"longUrl": url, "findIfExists": existing},
         headers={"X-Api-Key": os.environ.get("SHLINK_API_KEY")},
     )
@@ -109,7 +109,7 @@ def shorten_url(url: str, existing: bool = False) -> str:
 def update_short_url(short_url: str, new_url: str) -> None:
     shortCode = short_url.split("/")[-1]
     resp = requests.patch(
-        f"{os.environ.get("SHLINK_API_URI")}/short-urls/{shortCode}",
+        f"{os.environ.get('SHLINK_API_URI')}/short-urls/{shortCode}",
         data={"longUrl": new_url},
         headers={"X-Api-Key": os.environ.get("SHLINK_API_KEY")},
     )
