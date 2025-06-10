@@ -77,7 +77,7 @@ class Preview:
         self.filename = filename
 
     def compute(self):
-        dot = graphviz.Digraph("preview", format="png", engine="circo")
+        dot = graphviz.Digraph("preview", format="png", engine="sfdp", strict=True)
 
         for link in self.links:
             dot.node(
