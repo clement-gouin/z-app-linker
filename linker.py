@@ -200,7 +200,7 @@ def __print_apps(apps: list[Link], clear: bool = True, quiet: bool = False) -> N
     linked = (sum(app.link is not None for app in apps) / len(apps)) - resolved
     remaining = 1 - linked - resolved
     print(
-        f"[\033[32;1m{round(resolved * BAR_SIZE) * "#"}\033[33;1m{round(linked * BAR_SIZE) * "#"}\033[0m{round(remaining * BAR_SIZE) * "·"}] ({linked + resolved:.0%} linked, {resolved:.0%} resolved)"
+        f"[\033[32;1m{round(resolved * BAR_SIZE) * '#'}\033[33;1m{round(linked * BAR_SIZE) * '#'}\033[0m{round(remaining * BAR_SIZE) * '·'}] ({linked + resolved:.0%} linked, {resolved:.0%} resolved)"
     )
 
 
