@@ -184,12 +184,24 @@ def parse_data_file(raw_data: list[str], add_debug: bool) -> list[Link]:
     return apps
 
 
-def __print_apps(apps: list[Link], clear: bool = True) -> None:
+BAR_SIZE = 30
+
+
+def __print_apps(apps: list[Link], clear: bool = True, quiet: bool = False) -> None:
     if clear:
-        for _ in range(len(apps)):
-            print("\x1b[1A\x1b[2K", end="")
-    for app in apps:
-        print(f"* {app.color()}{app}\033[0m: {app.status()}")
+        if not quiet:
+            for _ in range(len(apps)):
+                print("\x1b[1A\x1b[2K", end="")
+        print("\x1b[1A\x1b[2K", end="")
+    if not quiet:
+        for app in apps:
+            print(f"* {app.color()}{app}\033[0m: {app.status()}")
+    resolved = sum(app.resolved for app in apps) / len(apps)
+    linked = (sum(app.link is not None for app in apps) / len(apps)) - resolved
+    remaining = 1 - linked - resolved
+    print(
+        f"[\033[32;1m{round(resolved * BAR_SIZE) * "#"}\033[33;1m{round(linked * BAR_SIZE) * "#"}\033[0m{round(remaining * BAR_SIZE) * "·"}] ({linked + resolved:.0%} linked, {resolved:.0%} resolved)"
+    )
 
 
 def link_all_apps(apps: list[Link]) -> None:
@@ -198,9 +210,9 @@ def link_all_apps(apps: list[Link]) -> None:
     print(f"INFO: linked {len(apps)} apps")
 
 
-def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
+def resolve_all_apps(apps: list[Link], fast: bool = False, quiet: bool = False) -> None:
     print(f"INFO: resolving links for {len(apps)} apps...")
-    __print_apps(apps, clear=False)
+    __print_apps(apps, clear=False, quiet=quiet)
     if fast:
         while any(not app.resolved for app in apps):
             available = [
@@ -215,14 +227,14 @@ def resolve_all_apps(apps: list[Link], fast: bool = False) -> None:
                 )
                 sys.exit(1)
             available[0].resolve()
-            __print_apps(apps)
+            __print_apps(apps, quiet=quiet)
     else:
         for app in apps:
             app.resolve_shallow()
-            __print_apps(apps)
+            __print_apps(apps, quiet=quiet)
         for app in apps:
             app.resolve()
-            __print_apps(apps)
+            __print_apps(apps, quiet=quiet)
     print(f"INFO: resolved {len(apps)} apps")
 
 
