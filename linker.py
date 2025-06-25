@@ -22,13 +22,16 @@ APPS = {
 
 
 class Link:
-    def __init__(self, app: str, link_name: str, data: str) -> None:
+    def __init__(
+        self, app: str, link_name: str, data: str, preview: bool = True
+    ) -> None:
         self.app = app
         self.link_name = link_name
         self.data = data
         self.dependencies: list[Link] = []
         self.link = None
         self.resolved = False
+        self.preview = preview
 
     @property
     def app_name(self) -> str:
@@ -81,14 +84,16 @@ class Preview:
         dot = graphviz.Digraph("preview", format="png", engine="sfdp", strict=True)
 
         for link in self.links:
-            dot.node(
-                link.link_name,
-                link.link_name,
-                fillcolor=APPS[link.app][1],
-                style="filled",
-            )
-            for other in link.dependencies:
-                dot.edge(link.link_name, other.link_name)
+            if link.preview:
+                dot.node(
+                    link.link_name,
+                    link.link_name,
+                    fillcolor=APPS[link.app][1],
+                    style="filled",
+                )
+                for other in link.dependencies:
+                    if other.preview:
+                        dot.edge(link.link_name, other.link_name)
 
         dot.render(self.filename)
 
