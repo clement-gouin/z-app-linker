@@ -40,8 +40,9 @@ class Link:
                 self.dependencies += [other]
 
     def resolve_shallow(self) -> None:
-        data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
-        self.link = shorten_url(custom_link(self.app, data))
+        if self.link is None:
+            data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
+            self.link = shorten_url(custom_link(self.app, data))
 
     def resolve(self) -> None:
         data = self.data.encode("ascii", "xmlcharrefreplace").decode("utf-8")
